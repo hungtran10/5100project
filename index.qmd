@@ -1,5 +1,5 @@
 ---
-title: "Statistical Analysis of the Variables that Imapct Airbnb Rental Prices"
+title: "Statistical Analysis of the Variables that Impact Airbnb Rental Prices"
 ---
 ![](assets/airbnb.jpeg){width=800}
 

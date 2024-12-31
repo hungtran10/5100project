@@ -1,0 +1,66 @@
+---
+title: "Clicks vs. Bricks: Demographic and Financial Drivers of Shopping Preferences"
+---
+
+### Introduction
+Welcome to my project exploring the dynamics of modern shopping preferences: online vs. in-store. This project explores the demographic and financial factors that influence how customers choose to shop, using  data analysis and machine learning models. From identifying that higher-income customers gravitate toward online platforms to uncovering factors associated with online shopping preferences and other factors, these insights are designed to help retailers adapt and thrive in an evolving marketplace. Discover how data-driven strategies can bridge the gap between clicks and bricks, creating a better understanding of better reaching the target audience.
+
+### Research Topic: Customer Preferences for Online v. In-Person Shopping
+
+**Why I was Interested:** In the wake of economic and political events in from 2023 up until the end of 2024, I have been interested in economics and the potential impact of policies on the cost-of-living for everyday Americans. Additionally, being around the holiday season, I want to investigate the retail shopping sector. Thus, goods in this context pertain to tangible goods in retail. As a person who occasionally online shops, I see the merits of in-person shopping, too. 
+
+For this project, I would like understand to how businesses can utilize customer information to better tailor their channel experiences. Please continue exploring this website to learn how I conducted my research and the insights that I gathered. 
+
+**Why You Should Keep Reading:** If you're interested in learning how you can turn customer data into actionable insights, and develop business strategies. 
+
+### Preliminary research questions:
+  - How do customer demographics (age, gender, race, education level, income, etc.) influence one's preference for in-store or online shopping?
+  - Can we predict whether an individual has shopped online based on their demographic and financial information in the past year?
+  - What demographic factors predict proportion of online spending among total expenses?
+  - Can we predict one's online shopping expenditure based on their annual earnings and expenses?
+  - Can we predict one's sex based on their demographics and financial information?
+  - What is the relationship between retirement contributions and shopping preferences?
+  - Can we predict one's employment type or education level based on demographic and financial information?
+  - What are the primary factors that drive customers to choose in-store or online shopping for different product categories?
+  - How does customer satisfaction differ between in-store and online shopping experiences?
+  - What are the most common reasons for customer dissatisfaction in each shopping channel?
+
+These research questions will be refined based on the data that becomes available. 
+
+**Where to Go Next:** Please refer to the 'Technical Details' tab for the in-depth analysis of my code. If you want to get straight to the insights, click on the 'Report' tab.
+
+### Literature Review
+
+I conducted a literature review of five papers to better understand the studies that have been conducted for topics surrounding in-store vs. online shopping, hoping to see if the existing knowledge can help guide my project. Here are their insights.
+
+1. "Exploring the choice between in-store and online shopping" by Schmid, Schmutz and Axhausen
+   -  Researched the attributes relavant to in-store and online shopping for groceries and electronic goods.
+   -  Key findings:
+     -  The study found that the value of travel time savings (VTTS) is about 40 Swiss Francs per hour, and the value of delivery time savings (VDTS) ranges between 1.50 and 14.10 CHF/time unit, depending on shopping purpose and time interval. This means online retailers should consider factoring in customer's willingness to have things deliver into prices i.e. make prices higher to account for delivery. @schmid_exploring_2016
+     -  Market shares of online and in-store shopping choices depend on the shopping purpose, with 65% choosing in-store and 35% choosing online for groceries, and 39% choosing in-store and 61% choosing online for electronic goods. @schmid_exploring_2016
+     -  Limited to Switzerland
+2. "Accessibility or Innovation? Store Shopping Trips versus Online Shopping" by Maat and Konings
+   -  The study examines the impact of online shopping on physical stores, testing two hypotheses: the - diffusion of innovation hypothesis-  and the - efficiency hypothesis- , and finds that both hypotheses have an impact, although the innovation hypothesis is more significant. @maat_accessibility_2018
+   -  Key findings:
+     -  Richer households are more likely to shop for groceries online. @maat_accessibility_2018
+     -  For clothes, people with more access to clothing stores are more likely to buy online. @maat_accessibility_2018
+     -  People who get pleasure from buying books and have an interest in culture are less likely to online shop for books. @maat_accessibility_2018
+   -  Limited to the Netherlands
+3. "Shopping mode choice: Physical store shopping versus e-shopping" by Ming-Hsiung Hsiao
+   -  This study examines the - tradeoff between time and cost-  attributes of shopping modes, specifically physical store shopping and e-shopping, and estimates the value of time in terms of travel time to shopping places and waiting time for product delivery. @hsiao_shopping_2009
+   -  Economic functions, such as travel cost, travel time, purchase price, and waiting time for product delivery, play a crucial role in influencing consumers' shopping mode choices. @hsiao_shopping_2009
+   -  Key findings:
+     -  Online stores generally offer lower prices than physical stores, but transaction security and product delivery problems are major concerns for consumers. @hsiao_shopping_2009
+     -  Avoiding a shopping trip produces far more benefits than bearing waiting for the delivery of online purchased books: $5.58 vs. $2.90. @hsiao_shopping_2009
+     -  The value of travel time is $5.29/hour while the value of delivery time is $0.53/day. @hsiao_shopping_2009
+   -  Limited to books
+4. "Comparing online and in-store risks in multichannel shopping" by Christophe Bezes
+   -  Key findings:
+     -  Overall - perceived risk-  is higher online than in-store, with performance, financial, psychological, transaction, and logistics risks being higher online, while time risk is lower online. Familiarity and experience with the channel reduces overall perceived risk. It is easier to improve perceived value than to reduce online purchase risk. @bezes_comparing_2016
+     -  Overall - purchase risk-  is higher and more dissuasive on the website than in-store, and that logistics, psychological, and performance risks are more influential for an online purchase, while financial, time, and transaction risks are more influential for an in-store purchase. @bezes_comparing_2016
+     -  The study concludes that retailers should focus on reducing performance risk on their website and time risk in their stores. @bezes_comparing_2016
+5. "To be online or in-store: Analysis of retail, grocery, and food shopping in New York City" by Woojung Kim and Xiaokun Wang
+   -  This study investigates the factors affecting retail, grocery, and food deliveries and their relationships with in-store shopping trips by mode, using survey data. @kim_be_2021
+   -  Key findings:
+     -  The number of children in the household was associated with more frequent retail, grocery, and food deliveries. Age was negatively associated with both delivery and in-store walking trip. Having a smartphone increased the likelihood of both delivery and in-store shopping. @kim_be_2021
+     -  The study found that online shopping and in-store shopping for retail, grocery, and food are interconnected, and that factors affecting deliveries vary by the type of delivery (retail, grocery or food). The results also showed that underrepresented races and elderly people are less likely to receive all three delivery services. @kim_be_2021

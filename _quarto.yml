@@ -10,7 +10,7 @@ website:
       - href: https://htran.georgetown.domains/Homepage/
         text: Home
       - href: index.qmd
-        text: About the Proejct  
+        text: Project Overview
       - href: presentation.qmd
         text: Presentation
       - href: finalreport.qmd
@@ -19,7 +19,7 @@ website:
 format:
   html:
     theme: zephyr
-    toc: true
+    toc: true 
 
 
 

@@ -1,0 +1,519 @@
+---
+title: "Chicago analysis"
+output: html_document
+
+format:
+  html:
+    embed-resources: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(tidyverse)
+library(readr)
+library(ggplot2)
+
+chicago_data <- read_csv("./chicago_listings.csv")
+head(chicago_data)
+print(colnames(chicago_data))
+```
+```{r}
+#View the summary of the tibble
+str(chicago_data)
+```
+```{r}
+clean_data <- function(df){
+  
+  # Select desired columns
+  new_df <- df |> select(id, host_id, host_response_time, host_response_rate, host_is_superhost, neighbourhood_cleansed, property_type, room_type, accommodates, bathrooms, bedrooms, beds, amenities, price, minimum_nights, availability_30, availability_365, number_of_reviews, last_review, review_scores_rating, review_scores_location, reviews_per_month, longitude, latitude, host_identity_verified, host_total_listings_count)
+  # Convert price to numeric after removing the dollar sign, and commas
+  new_df$price <- as.numeric(gsub("[$,]", "", new_df$price))
+
+  # Convert host_response_rate to numeric after removing the '%' sign
+  new_df$host_response_rate <- as.numeric(gsub("%", "", new_df$host_response_rate))
+  
+  # Drop rows where price is null
+  new_df <- new_df |> filter(!is.na(price))
+
+
+  # One-hot encode 'amenities' column
+  # new_df <- new_df %>%
+  # mutate(amenities_list = strsplit(amenities, ",\\s*")) %>% # Split by comma and optional space
+  # unnest_wider(amenities_list, names_sep = "_") %>%        # Spread into multiple columns
+  # pivot_longer(cols = starts_with("amenities_list"),       # Reshape to long format for processing
+  #              names_to = NULL, values_to = "amenity") %>%
+  # filter(!is.na(amenity)) %>%                              # Remove NA values
+  # mutate(amenity = trimws(amenity)) %>%                   # Remove leading/trailing spaces
+  # pivot_wider(names_from = amenity,                       # One-hot encode
+  #             values_from = amenity,
+  #             values_fill = 0,
+  #             values_fn = function(x) 1) %>%
+  # group_by(id) %>%                                        # Reaggregate by ID
+  # summarise(across(everything(), max, na.rm = TRUE))
+  
+  return(new_df)
+}
+
+new_chicago <- clean_data(chicago_data)
+print(head(new_chicago))
+
+#View percentage of missing values per column
+colSums(is.na(new_chicago)) / nrow(new_chicago)
+unique_neighbourhoods <- chicago_data %>%
+  distinct(neighbourhood_cleansed) %>%
+  pull(neighbourhood_cleansed)
+print(unique_neighbourhoods)
+
+```
+
+**EDA**
+```{r}
+# Price density with and without outliers (2 plots total)
+# With outliers
+ggplot(new_chicago, aes(x = price)) +
+  geom_density(color="forestgreen") +
+  labs(x = "Price", y = "Density", title = "Price Density with Outliers")
+
+# Without outliers using the IQR method
+q1 <- quantile(new_chicago$price, 0.25)
+q3 <- quantile(new_chicago$price, 0.75)
+IQR <- q3 - q1
+# Define outlier bounds
+lower_bound <- q1 - 1.5 * IQR
+upper_bound <- q3 + 1.5 * IQR
+
+new_chicago_wo_price_outliers <- new_chicago %>% filter(price >= lower_bound & price <= upper_bound)
+
+# Combine datasets for plotting
+new_chicago$outlier_status <- "With Outliers"
+new_chicago_wo_price_outliers$outlier_status <- "Without Outliers"
+combined_data <- rbind(new_chicago, new_chicago_wo_price_outliers)
+
+custom_colors <- c("With Outliers" = "#FF6F61", "Without Outliers" = "#6CA0DC")
+
+# Plot density for both datasets
+ggplot(combined_data, aes(x = price, fill = outlier_status)) +
+  geom_density(alpha = 0.7) +
+  facet_wrap(~outlier_status, scales = "free") +
+  scale_x_continuous(labels = scales::dollar_format()) + # Format x-axis as currency
+  scale_fill_manual(values = custom_colors) + # Use custom colors
+  labs(
+    title = "Chicago Rental Price Density: With and Without Outliers",
+    x = "Price (USD)",
+    y = "Density",
+    fill = "Data Type"
+  ) +
+  theme_minimal(base_family = "Arial", base_size = 14) + # Cleaner font and base size
+  theme(
+    panel.grid = element_blank(), # Remove grid lines
+    axis.line = element_line(color = "black"), # Add axis lines
+    strip.text = element_text(size = 14, face = "bold"), # Style facet labels
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # Title styling
+    legend.position = "none"  # Remove the legend
+  )
+
+```
+```{r}
+print(mean(new_chicago$price))
+print(mean(new_chicago_wo_price_outliers$price))
+```
+
+
+```{r}
+# Average $ by neighborhood
+avg_price_by_neighborhood <- new_chicago %>% 
+  group_by(neighbourhood_cleansed) %>% 
+  summarise(average_price = mean(price, na.rm = TRUE)) %>% 
+  arrange(desc(average_price))
+
+print(avg_price_by_neighborhood)
+
+max_price_neighborhood <- avg_price_by_neighborhood %>% 
+  filter(average_price == max(average_price)) %>%
+  select(neighbourhood_cleansed, average_price)
+
+min_price_neighborhood <- avg_price_by_neighborhood %>% 
+  filter(average_price == min(average_price)) %>%
+  select(neighbourhood_cleansed, average_price)
+
+# Print the results
+print(max_price_neighborhood)
+print(min_price_neighborhood)
+
+top_10_expensive_neighborhood <- head(avg_price_by_neighborhood, 10)
+
+ggplot(top_10_expensive_neighborhood, aes(x = reorder(neighbourhood_cleansed, average_price), y = average_price)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "black", alpha = 0.7) +
+  ggtitle("Chicago: Top 10 Neighborhoods with Highest Mean Prices") +
+  xlab("Neighborhood") +
+  ylab("Average Price") +
+  coord_flip() +
+  theme_minimal(base_family = "Arial", base_size = 12)
+```
+
+```{r}
+# Average price by property type
+avg_price_by_property_type <- new_chicago |>
+  group_by(property_type) |>
+  summarise(average_price = mean(price, na.rm = TRUE))
+
+print(avg_price_by_property_type)
+
+# Price per property type
+# Grouping into broader category groups
+new_chicago_wo_price_outliers <- new_chicago_wo_price_outliers %>%
+  mutate(
+    property_group = case_when(
+      grepl("condo|loft|serviced apartment|aparthotel|rental unit|guest suit", property_type, ignore.case = TRUE) ~ "Apartment",
+      grepl("home|bungalow|guesthouse|townhouse|vacation home|tiny home|cottage|villa", property_type, ignore.case = TRUE) ~ "House",
+      grepl("private room", property_type, ignore.case = TRUE) ~ "Private Room",
+      grepl("shared room", property_type, ignore.case = TRUE) ~ "Shared Room",
+      TRUE ~ "Other"
+    )
+  )
+
+# Count each group to verify
+table(new_chicago_wo_price_outliers$property_group)
+
+# Boxplot for aggregated property groups with custom axis splines
+ggplot(new_chicago_wo_price_outliers, aes(x = property_group, y = price, fill = property_group)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 21, outlier.size = 2) +
+  scale_y_continuous(labels = scales::dollar_format()) +
+  scale_fill_manual(values = c(
+    "Apartment" = "#6CA0DC",
+    "House" = "#FF6F61",
+    "Private Room" = "#FFD700",
+    "Shared Room" = "#28B463",
+    "Other" = "#A569BD"
+  )) +
+  labs(
+    title = "Chicago: Boxplot of Airbnb Prices by Property Types",
+    x = "Property Type",
+    y = "Price (USD)"
+  ) +
+  theme_minimal(base_family = "Arial", base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank(),
+    legend.position = "none",
+    axis.line = element_blank(), # Remove all default axis lines
+    axis.line.x.bottom = element_line(color = "black", size = 0.8), # Add black line to bottom x-axis
+    axis.line.y.left = element_line(color = "black", size = 0.8) # Add black line to left y-axis
+  )
+```
+
+```{r}
+# Boxplot of price by room type
+
+# Custom color palette for room types
+custom_colors <- c("Entire home/apt" = "#FF6F61", 
+                   "Private room" = "#6CA0DC", 
+                   "Shared room" = "#FFD700", 
+                   "Hotel room" = "#7DCEA0")
+
+ggplot(new_chicago_wo_price_outliers, aes(x = room_type, y = price, fill = room_type)) +
+  geom_boxplot(outlier.color = "red", outlier.shape = 21, outlier.size = 2) +
+  scale_y_continuous(labels = scales::dollar_format()) + # Format y-axis as currency
+  scale_fill_manual(values = custom_colors) + # Use custom colors for room types
+  labs(
+    title = "Chicago: Boxplot of Airbnb Prices by Room Type",
+    x = "Room Type",
+    y = "Price (USD)",
+    fill = "Room Type"
+  ) +
+  theme_minimal(base_family = "Arial", base_size = 14) + # Cleaner font and base size
+  theme(
+    panel.grid = element_blank(), # Remove grid lines
+    axis.line = element_line(color = "black"), # Add axis lines
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), # Title styling
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold"), # Rotate x-axis labels
+    legend.position = "none" # Remove legend (optional for a cleaner look)
+  )
+
+```
+```{r}
+ggplot(data = new_chicago_wo_price_outliers, aes(x = review_scores_rating, y = price)) +
+  geom_point() +
+  labs(title = "Price v. Rating with outliers",
+       x = "Review Rating",
+       y = "Price")
+
+
+new_chicago_ratings_grouped <- new_chicago_wo_price_outliers %>%
+  mutate(rating_category = case_when(
+    review_scores_rating >= 0 & review_scores_rating < 2 ~ "Low (0-2)",
+    review_scores_rating >= 2 & review_scores_rating < 4 ~ "Medium (2-4)",
+    review_scores_rating >= 4 & review_scores_rating <= 5 ~ "High (4-5)"
+  ))  
+
+
+new_chicago_ratings_grouped <- new_chicago_ratings_grouped %>%
+  filter(!is.na(rating_category))
+
+ggplot(new_chicago_ratings_grouped, aes(x = rating_category, y = price)) +
+  geom_boxplot(fill = "maroon", alpha = 0.7) +
+  ggtitle("Boxplot of Price by Rating Groups") +
+  xlab("Rating Category") +
+  ylab("Price") +
+  theme_minimal()
+```
+
+```{r}
+new_chicago_expanded <- new_chicago_wo_price_outliers %>%
+  filter(if_all(c(accommodates, bathrooms, bedrooms, beds), ~ !is.na(.))) %>% # Drop rows with NAs in specified columns by applying is.na
+  mutate(
+    accommodates = cut(accommodates, breaks = c(0, 2, 4, 6, 8, 10, Inf), labels = c("1-2", "3-4", "5-6", "7-8", "9-10", "11+")),
+    bathrooms = cut(bathrooms, breaks = c(0, 1, 2, 3, 4, Inf), labels = c("0", "1", "2", "3", "4+")),
+    bedrooms = cut(bedrooms, breaks = c(0, 1, 2, 3, 4, Inf), labels = c("0", "1", "2", "3", "4+")),
+    beds = cut(beds, breaks = c(0, 1, 2, 3, 4, Inf), labels = c("0", "1", "2", "3", "4+"))
+  ) %>%
+  select(price, accommodates, bathrooms, bedrooms, beds) %>%
+  pivot_longer(cols = c(accommodates, bathrooms, bedrooms, beds),
+               names_to = "feature",
+               values_to = "value")
+
+
+# Create the faceted boxplot
+ggplot(new_chicago_expanded, aes(x = factor(value), y = price)) +
+  geom_boxplot(aes(fill = feature), color = "black", outlier.shape = NA) +
+  facet_wrap(~ feature, scales = "free_x") +
+  labs(title = "Chicago: Price by Property Features",
+       x = "Feature Value",
+       y = "Price (USD)") +
+  theme_minimal() +
+  theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      legend.position = "none",
+      panel.grid = element_blank(), # Remove grid lines
+      axis.line = element_line(color = "black")
+      ) +
+  scale_fill_manual(values = c("#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3"))
+```
+
+```{r}
+# Boxplot per Superhost Status
+new_chicago_wo_superhost_nulls <- new_chicago_wo_price_outliers %>%
+  filter(!is.na(host_is_superhost))
+
+median_price_superhost <- new_chicago_wo_superhost_nulls %>%
+  filter(host_is_superhost == TRUE) %>%
+  summarize(median_price = median(price))
+
+print(median_price_superhost)
+
+median_price_nonsuperhost <- new_chicago_wo_superhost_nulls %>%
+  filter(host_is_superhost == FALSE) %>%
+  summarize(median_price = median(price))
+
+print(median_price_nonsuperhost)
+
+ggplot(new_chicago_wo_superhost_nulls, aes(x = host_is_superhost, y = price)) +
+  geom_boxplot(fill = "skyblue", color = "darkblue") +
+  labs(title = "Chicago: Price Differences by Superhost Status",
+       x = "Superhost Status",
+       y = "Price (USD)") +
+  theme_minimal()
+head(new_chicago_wo_superhost_nulls)
+```
+
+## Statistical Testing ##
+
+**ANOVA of price by neighborhood**
+
+**Null Hypothesis** $(H_0)$: No significant difference between the mean listing price across Chicago neighborhoods on Airbnb.
+
+**Alternative Hypothesis** $(H_1)$: There is at least one neighborhood mean listing price that is different from the other Chicago neighborhood.
+
+
+```{r}
+aov_price <- aov(price ~ neighbourhood_cleansed, data = new_chicago_wo_price_outliers)
+summary(aov_price)
+
+```
+- Conclusion: As the p-value < 0.05, we can reject the null hypothesis and conclude that there is a significant difference between at least two groups in the mean price listings across Chicago neighborhoods. 
+
+**Price v. Property Type**
+
+```{r}
+aov_price_property <- aov(price ~ property_group, data = new_chicago_wo_price_outliers)
+summary(aov_price_property)
+
+```
+- Conclusion: As the p-value < 0.05, we can reject the null hypothesis and conclude that there is a significant difference in mean listing prices between at least two property types. 
+
+**2. T-test difference in mean price by superhost** 
+
+**Null Hypothesis** $(H_0)$: No difference in the mean listing price between non-superhosts and superhosts on Airbnb.
+$H_0: \mu_{\text{Non-Superhost}} = \mu_{\text{Superhost}}$
+
+**Alternative Hypothesis** $(H_1)$: The mean listing prices by non-superhosts are less than those of superhosts on Airbnb.
+$H_1: \mu_{\text{Non-Superhost}} \lt \mu_{\text{Superhost}}$
+
+```{r}
+t_test_result <- t.test(
+  price ~ host_is_superhost,
+  data = new_chicago_wo_superhost_nulls,
+  alt = "less"
+)
+print(t_test_result)
+```
+
+- Conclusion: As the p-value < 0.05, we can reject the null hypothesis. There is enough evidence to conclude that the mean listing prices by non-superhosts are less than those of superhosts on Airbnb. We are 95% confident that the mean listing price for non-superhosts are on average at least $7.68 less than the mean listing price for superhosts on Airbnb. 
+
+
+**3. Correlation test for mean price by response rate** 
+
+```{r}
+#Correlation test in mean price by response rate
+
+
+listing_clean1 <- new_chicago_wo_price_outliers %>%
+  mutate(host_response_rate = host_response_rate / 100)  
+
+corr_price_response_rate <- cor.test(listing_clean1$price, listing_clean1$host_response_rate, method = "pearson")
+
+print(corr_price_response_rate)
+```
+- Conclusion: Since the p-value < 0.05, we can reject the null hypothesis and there is enough evidence to conclude that the true correlation between the mean listing price and the host response rate is not equal to 0. The calculated correlation coefficient is 0.1054 which describes a weak, positive relationship. We are 95% confident that the true Pearson correlation coefficient between mean listing price and host response rate between 0.0819 and 0.1288. This ultimately means that there is not a strong relationship between a listing's price and the host's response rate. 
+
+**4. Correlation test for Price vs. Review Score** 
+
+```{r}
+listing_clean2 <- new_chicago_wo_price_outliers %>%
+  filter(!is.na(review_scores_rating))
+
+corr_price_review_rating <- cor.test(listing_clean2$price, listing_clean2$review_scores_rating, method = "pearson")
+
+print(corr_price_review_rating)
+
+```
+- Conclusion: Since the p-value < 0.05, we can reject the null hypothesis and there is enough evidence to conclude that the true correlation between the mean listing price and the listing's review rating is not equal to 0. The calculated correlation coefficient is 0.0801 which describes a weak, positive relationship. We are 95% confident that the true Pearson correlation coefficient between mean listing price and host response rate between 0.0546 and 0.1055. This ultimately means that there is not a strong relationship between a listing's price and the listing's review rating.
+
+**5. Correlation test for Price vs. Accommodates** 
+
+```{r}
+listing_clean3 <- new_chicago_wo_price_outliers %>%
+  filter(!is.na(accommodates))
+
+corr_price_accommodates <- cor.test(listing_clean3$price, listing_clean3$accommodates, method = "pearson")
+
+print(corr_price_accommodates)
+
+```
+- Conclusion: Since the p-value < 0.05, we can reject the null hypothesis and there is enough evidence to conclude that the true correlation between the mean listing price and the listing's guest capacity is not equal to 0. The calculated correlation coefficient is 0.491 which describes a moderate, positive relationship. We are 95% confident that the true Pearson correlation coefficient between mean listing price and host response rate between 0.473 and 0.508. Therefore, we can expect price to increase as the max. number of guests the listing can accommodate increases.
+
+**6. Correlation test for Price vs. Bathrooms** 
+
+```{r}
+listing_clean4 <- new_chicago_wo_price_outliers %>%
+  filter(!is.na(bathrooms))
+
+corr_price_bathrooms <- cor.test(listing_clean4$price, listing_clean4$bathrooms, method = "pearson")
+
+print(corr_price_bathrooms)
+```
+- Conclusion: Since the p-value < 0.05, we can reject the null hypothesis and there is enough evidence to conclude that the true correlation between the mean listing price and the listing's total bathrooms is not equal to 0. The calculated correlation coefficient is 0.334 which describes a weak, positive relationship. We are 95% confident that the true Pearson correlation coefficient between mean listing price and host response rate between 0.313 and 0.354. 
+
+**7. Chi-squared association between Superhost Status and Room Type**
+
+**Null Hypothesis** $(H_0)$: There is no association between Superhost status and the room type of Airbnb listings.
+
+**Alternative Hypothesis** $(H_1)$: There is an association between Superhost status and the room type of Airbnb listings.
+
+
+```{r}
+listing_clean5 <- new_chicago_wo_price_outliers %>%
+  filter(!is.na(host_is_superhost)) %>%
+  filter(!is.na(room_type))
+
+superhost_room_table <- table(listing_clean5$host_is_superhost, listing_clean5$room_type)
+
+chi_squared_result <- chisq.test(superhost_room_table)
+print(superhost_room_table)
+print(chi_squared_result)
+```
+- Conclusion: As the p-value < 0.05, we can reject the null hypothesis and conclude that there is an association between Superhost status and the room type of the Airbnb listing.
+
+**8. Price. Distance to City Center: ANOVA and t-test**
+
+- ANOVA
+
+**Null Hypothesis** $(H_0)$: There is no significant difference in mean Airbnb listing prices across distance to city center (Near, Medium, Far)
+
+**Alternative Hypothesis** $(H_1)$: There is at least one distance category (Near, Medium, Far) in which the mean Airbnb listing price significantly differs from the rest
+
+Conclusion: As the p-value < 0.05, we reject the null hypothesis as there is enough evidence to conclude that there is at least one distance category which the mean price differs significantly.
+
+- t-test
+
+**Null Hypothesis** $(H_0)$: No difference in the mean listing price of near and far Airbnb listings.
+$H_0: \mu_{\text{Near}} = \mu_{\text{Far}}$
+
+**Alternative Hypothesis** $(H_1)$: The mean listing prices of listings closer to the city center are greater than those of listings further away.
+$H_1: \mu_{\text{Near}} \gt \mu_{\text{Far}}$
+Conclusion: As the p-value > 0.05, we fail to reject the null hypothesis. As the 95% confidence interval does include 0, the difference between the mean listing prices of Near and Far listings are not statistically significant. 
+
+```{r}
+# Eucledian distance from city center
+#Coordinates of the Loop in Chicago
+ref_lat = 41.8820
+ref_lon = -87.6278
+
+euclidean_distance <- function(lat1, lon1, lat2, lon2) {
+  sqrt((lat2 - lat1)^2 + (lon2 - lon1)^2)
+}
+
+#calculate distances from Chicago center
+new_chicago_wo_price_outliers$distance_to_city_center <- mapply(
+  euclidean_distance,
+  lat1 = ref_lat, lon1 = ref_lon,
+  lat2 = new_chicago_wo_price_outliers$latitude, lon2 = new_chicago_wo_price_outliers$longitude
+)
+
+# Create distance bins
+new_chicago_wo_price_outliers$distance_bin <- cut(
+  new_chicago_wo_price_outliers$distance_to_city_center,
+  breaks = 3,
+  labels = c("Near", "Medium", "Far")
+)
+
+# ANOVA
+anova_price_v_distance <- aov(price ~ distance_bin, data = new_chicago_wo_price_outliers)
+summary(anova_price_v_distance)
+# Run Tukey to see intra bucket mean differences
+TukeyHSD(anova_price_v_distance)
+
+# separate into near and far and do t-test
+new_chicago_wo_price_outliers$distance_category <- ifelse(new_chicago_wo_price_outliers$distance_to_city_center <= median(new_chicago_wo_price_outliers$distance_to_city_center), "Near", "Far")
+
+t.test(price ~ distance_category, data = new_chicago_wo_price_outliers, alt = "greater")
+```
+
+## Crime
+```{r}
+chicago_crime_data <- read_csv("./chicago_crime2024.csv")
+head(chicago_crime_data)
+# Calculate total data records by District
+district_crime_counts <- chicago_crime_data %>%
+  group_by(District) %>%
+  summarize(Total_Records = n())
+
+# Print the result
+print(district_crime_counts)
+```
+
+```{r}
+# Get unique Description values
+unique_descriptions <- chicago_crime_data %>%
+  distinct(Description)
+
+# Print the unique descriptions
+print(unique_descriptions)
+
+```
+

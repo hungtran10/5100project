@@ -11,6 +11,8 @@ website:
         text: Home
       - href: index.qmd
         text: Project Overview
+      - href: chicago.rmd
+        text: Code
       - href: presentation.qmd
         text: Presentation
       - href: finalreport.qmd

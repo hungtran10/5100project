@@ -10,6 +10,8 @@ This group study investigates the factors influencing Airbnb pricing within the 
 
 Furthermore, this project addresses the strategic investments made by many hosts striving for "Superhost" status, a designation earned based on stringent performance criteria. The research aims to provide actionable insights for both guests and hosts. For guests, the objective is to enable informed decision-making regarding affordability, amenities, and safety. For hosts, the goal is to identify strategies for maximizing returns through optimized property features and pricing. Key research questions include: (1) identifying the primary drivers of Airbnb pricing; (2) comparing pricing strategies of Superhosts and regular hosts; (3) analyzing city-specific price variations; (4) assessing the impact of neighborhood crime rates on pricing; and (5) evaluating the influence of proximity to city centers.
 
+I specifically focused on doing the exploratory data and statistical analysis of the Chicago listings. Our 2024 Airbnb listings data was downloaded from this [source](https://insideairbnb.com/get-the-data/).
+
 ## Methods
 
 **Independent Samples t-Tests:** These tests were employed to determine whether statistically significant differences exist between the means of two independent groups. Specifically, t-tests were used to evaluate the impact of Superhost status on mean listing price, testing the null hypothesis that there is no difference in mean listing prices between Superhost and non-Superhost listings. A p-value below the significance level of 0.05 indicates rejection of the null hypothesis.

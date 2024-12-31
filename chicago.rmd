@@ -22,6 +22,7 @@ chicago_data <- read_csv("./chicago_listings.csv")
 head(chicago_data)
 print(colnames(chicago_data))
 ```
+
 ```{r}
 #View the summary of the tibble
 str(chicago_data)
